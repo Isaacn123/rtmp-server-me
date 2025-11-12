@@ -24,7 +24,7 @@ services:
     volumes:
       - ./data:/app/data
     environment:
-      - RTMP_SERVER_URL=rtmp://69.167.167.129/live
+      - RTMP_SERVER_URL=rtmp://69.167.167.129:1936/live
     restart: unless-stopped
     networks:
       - rtmp-network
