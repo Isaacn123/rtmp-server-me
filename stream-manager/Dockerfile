@@ -16,7 +16,7 @@ COPY app.py .
 # Create data directory
 RUN mkdir -p /app/data
 
-EXPOSE 8502
-EXPOSE 8003
+EXPOSE 8503
+EXPOSE 8004
 
-CMD ["streamlit", "run", "app.py", "--server.port=8502", "--server.address=0.0.0.0"]
+CMD ["streamlit", "run", "app.py", "--server.port=8503", "--server.address=0.0.0.0"]
