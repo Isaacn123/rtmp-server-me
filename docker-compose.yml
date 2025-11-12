@@ -21,6 +21,7 @@ services:
     container_name: stream-manager
     ports:
       - "8502:8501"  # Streamlit web interface
+      - "8003:8003"  # FastAPI server
     volumes:
       - ./data:/app/data
     environment:

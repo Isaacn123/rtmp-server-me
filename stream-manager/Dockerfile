@@ -17,6 +17,6 @@ COPY app.py .
 RUN mkdir -p /app/data
 
 EXPOSE 8502
-EXPOSE 8002
+EXPOSE 8003
 
-CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+CMD ["streamlit", "run", "app.py", "--server.port=8502", "--server.address=0.0.0.0"]
