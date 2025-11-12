@@ -21,7 +21,7 @@ echo ""
 echo "Attempting webroot method (requires main nginx to proxy challenges)..."
 echo ""
 
-docker run --rm \
+docker run -it --rm \
   -v "$(pwd)/certbot/conf:/etc/letsencrypt" \
   -v "$(pwd)/certbot/www:/var/www/certbot" \
   certbot/certbot certonly \

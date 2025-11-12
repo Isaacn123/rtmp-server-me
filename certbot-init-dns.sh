@@ -14,8 +14,10 @@ echo "This method doesn't require port 80 to be available."
 echo ""
 echo "You'll need to add a TXT record to your DNS when prompted."
 echo ""
+echo "Press Enter to continue..."
+read
 
-docker run --rm \
+docker run -it --rm \
   -v "$(pwd)/certbot/conf:/etc/letsencrypt" \
   -v "$(pwd)/certbot/www:/var/www/certbot" \
   certbot/certbot certonly \
@@ -24,6 +26,7 @@ docker run --rm \
   --email $EMAIL \
   --agree-tos \
   --no-eff-email \
+  --manual-public-ip-logging-ok \
   -d $DOMAIN
 
 if [ $? -eq 0 ]; then
@@ -36,5 +39,10 @@ if [ $? -eq 0 ]; then
 else
     echo ""
     echo "❌ Certificate request failed."
+    echo ""
+    echo "Make sure you:"
+    echo "  1. Added the TXT record to your DNS"
+    echo "  2. Waited for DNS propagation (check with: dig TXT _acme-challenge.live.kayanja1.org)"
+    echo "  3. Pressed Enter when prompted"
 fi
 
