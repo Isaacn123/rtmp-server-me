@@ -228,8 +228,51 @@ def main_streamlit_app():
             stream_info = manager.get_stream_info(stream_key)
             if stream_info:
                 st.success(f"🟢 {stream_info['name']} - Streaming since {datetime.fromisoformat(start_time).strftime('%H:%M:%S')}")
+                if vps_ip:
+                    hls_url = f"http://{vps_ip}:8088/hls/{stream_key}.m3u8"
+                    st.code(f"Watch: {hls_url}", language="bash")
+                    
+                    # Embedded HLS player for browser playback
+                    st.markdown("### 🎥 Watch in Browser")
+                    player_html = f"""
+                    <video id="video" width="100%" height="auto" controls autoplay>
+                        <source src="{hls_url}" type="application/x-mpegURL">
+                        Your browser does not support the video tag or HLS playback.
+                    </video>
+                    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+                    <script>
+                        var video = document.getElementById('video');
+                        var videoSrc = '{hls_url}';
+                        if (Hls.isSupported()) {{
+                            var hls = new Hls();
+                            hls.loadSource(videoSrc);
+                            hls.attachMedia(video);
+                            hls.on(Hls.Events.MANIFEST_PARSED, function() {{
+                                video.play();
+                            }});
+                        }} else if (video.canPlayType('application/vnd.apple.mpegurl')) {{
+                            video.src = videoSrc;
+                            video.addEventListener('loadedmetadata', function() {{
+                                video.play();
+                            }});
+                        }}
+                    </script>
+                    """
+                    st.components.v1.html(player_html, height=500)
     else:
         st.info("No active streams")
+    
+    # RTMP Stats Link
+    if vps_ip:
+        st.sidebar.markdown("---")
+        st.sidebar.subheader("🔍 Diagnostics")
+        stats_url = f"http://{vps_ip}:8088/stat"
+        player_url = f"http://{vps_ip}:8088/player.html"
+        st.sidebar.write("**RTMP Stats:**")
+        st.sidebar.markdown(f"[Open Stats Page]({stats_url})")
+        st.sidebar.write("**🎥 Video Player:**")
+        st.sidebar.markdown(f"[Open Player Page]({player_url})")
+        st.sidebar.write("Use the player page to watch streams in your browser.")
     
     # Server statistics
     st.sidebar.title("Server Info")

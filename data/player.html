@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RTMP Stream Player</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #fff;
+        }
+        .container {
+            background-color: #2a2a2a;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+        }
+        #video {
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            background-color: #000;
+            border-radius: 5px;
+        }
+        .info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #333;
+            border-radius: 5px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .error {
+            background-color: #f44336;
+            color: white;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #555;
+            border-radius: 5px;
+            background-color: #333;
+            color: #fff;
+            font-size: 14px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎥 RTMP Stream Player</h1>
+        
+        <div class="info">
+            <label for="streamUrl"><strong>Enter HLS Stream URL:</strong></label>
+            <input type="text" id="streamUrl" placeholder="http://69.167.167.129:8088/hls/YOUR-STREAM-KEY.m3u8" 
+                   value="http://69.167.167.129:8088/hls/4XFUbGSe7xUw.m3u8">
+            <button onclick="loadStream()">Load Stream</button>
+            <button onclick="stopStream()">Stop</button>
+        </div>
+        
+        <div id="status"></div>
+        
+        <video id="video" controls autoplay></video>
+        
+        <div class="info">
+            <h3>📋 Instructions:</h3>
+            <ul>
+                <li>Enter your HLS stream URL in the input field above</li>
+                <li>Click "Load Stream" to start playback</li>
+                <li>Works in Chrome, Firefox, Edge, and Safari</li>
+                <li>If playback doesn't start, check that the stream is active</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let hls = null;
+        
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        function loadStream() {
+            const video = document.getElementById('video');
+            const streamUrl = document.getElementById('streamUrl').value.trim();
+            
+            if (!streamUrl) {
+                showStatus('Please enter a stream URL', 'error');
+                return;
+            }
+            
+            // Stop existing stream
+            stopStream();
+            
+            showStatus('Loading stream...', 'success');
+            
+            if (Hls.isSupported()) {
+                // Use HLS.js for browsers that don't support HLS natively
+                hls = new Hls({
+                    enableWorker: true,
+                    lowLatencyMode: false,
+                    backBufferLength: 90
+                });
+                
+                hls.loadSource(streamUrl);
+                hls.attachMedia(video);
+                
+                hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                    showStatus('✅ Stream loaded successfully!', 'success');
+                    video.play().catch(e => {
+                        showStatus('⚠️ Autoplay blocked. Click play button.', 'error');
+                    });
+                });
+                
+                hls.on(Hls.Events.ERROR, function(event, data) {
+                    if (data.fatal) {
+                        switch(data.type) {
+                            case Hls.ErrorTypes.NETWORK_ERROR:
+                                showStatus('❌ Network error. Check if stream is active.', 'error');
+                                hls.startLoad();
+                                break;
+                            case Hls.ErrorTypes.MEDIA_ERROR:
+                                showStatus('⚠️ Media error. Attempting recovery...', 'error');
+                                hls.recoverMediaError();
+                                break;
+                            default:
+                                showStatus('❌ Fatal error. Reloading stream...', 'error');
+                                hls.destroy();
+                                loadStream();
+                                break;
+                        }
+                    }
+                });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                // Native HLS support (Safari)
+                video.src = streamUrl;
+                video.addEventListener('loadedmetadata', function() {
+                    showStatus('✅ Stream loaded successfully!', 'success');
+                    video.play().catch(e => {
+                        showStatus('⚠️ Autoplay blocked. Click play button.', 'error');
+                    });
+                });
+                video.addEventListener('error', function() {
+                    showStatus('❌ Error loading stream. Check if stream is active.', 'error');
+                });
+            } else {
+                showStatus('❌ HLS playback not supported in this browser. Use Chrome, Firefox, Edge, or Safari.', 'error');
+            }
+        }
+        
+        function stopStream() {
+            const video = document.getElementById('video');
+            if (hls) {
+                hls.destroy();
+                hls = null;
+            }
+            video.pause();
+            video.src = '';
+        }
+        
+        // Auto-load on page load if URL is present
+        window.addEventListener('load', function() {
+            const streamUrl = document.getElementById('streamUrl').value.trim();
+            if (streamUrl) {
+                setTimeout(loadStream, 500);
+            }
+        });
+    </script>
+</body>
+</html>
+
