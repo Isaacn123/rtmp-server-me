@@ -5,7 +5,8 @@ import string
 from pathlib import Path
 from datetime import datetime, timedelta
 import requests
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Form
+from fastapi.responses import PlainTextResponse
 import uvicorn
 import threading
 import time
@@ -148,7 +149,7 @@ def main_streamlit_app():
                 
                 with col2:
                     if vps_ip:
-                        rtmp_url = f"rtmp://{vps_ip}/live/{stream['stream_key']}"
+                        rtmp_url = f"rtmp://{vps_ip}:1940/live/{stream['stream_key']}"
                         st.code(f"URL: {rtmp_url}", language="bash")
                     
                     if st.button(f"Delete {stream['name']}", key=f"delete_{stream['id']}"):
@@ -183,22 +184,52 @@ app = FastAPI()
 manager = StreamKeyManager()
 
 @app.post("/api/stream/start")
-async def stream_started(stream_key: str):
+async def stream_started(
+    call: str = Form(None),
+    addr: str = Form(None),
+    clientid: str = Form(None),
+    app: str = Form(None),
+    flashVer: str = Form(None),
+    swfUrl: str = Form(None),
+    tcUrl: str = Form(None),
+    pageUrl: str = Form(None),
+    name: str = Form(None)  # This is the stream key from RTMP
+):
     """Called when a stream starts publishing"""
+    # Nginx RTMP sends the stream key as 'name' parameter
+    stream_key = name
+    if not stream_key:
+        return PlainTextResponse("Invalid request: missing stream key", status_code=400)
+    
     stream_info = manager.get_stream_info(stream_key)
     if stream_info:
         manager.update_stream_status(stream_key, True)
-        return {"status": "ok", "message": f"Stream {stream_info['name']} started"}
-    return {"status": "error", "message": "Invalid stream key"}
+        return PlainTextResponse("OK", status_code=200)
+    return PlainTextResponse("Invalid stream key", status_code=403)
 
 @app.post("/api/stream/stop")
-async def stream_stopped(stream_key: str):
+async def stream_stopped(
+    call: str = Form(None),
+    addr: str = Form(None),
+    clientid: str = Form(None),
+    app: str = Form(None),
+    flashVer: str = Form(None),
+    swfUrl: str = Form(None),
+    tcUrl: str = Form(None),
+    pageUrl: str = Form(None),
+    name: str = Form(None)  # This is the stream key from RTMP
+):
     """Called when a stream stops publishing"""
+    # Nginx RTMP sends the stream key as 'name' parameter
+    stream_key = name
+    if not stream_key:
+        return PlainTextResponse("Invalid request: missing stream key", status_code=400)
+    
     stream_info = manager.get_stream_info(stream_key)
     if stream_info:
         manager.update_stream_status(stream_key, False)
-        return {"status": "ok", "message": f"Stream {stream_info['name']} stopped"}
-    return {"status": "error", "message": "Invalid stream key"}
+        return PlainTextResponse("OK", status_code=200)
+    return PlainTextResponse("Invalid stream key", status_code=403)
 
 @app.get("/api/streams")
 async def get_streams():
