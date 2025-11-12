@@ -83,6 +83,30 @@ class StreamKeyManager:
             data["active_streams"].pop(stream_key, None)
         
         self.save_streams(data)
+    
+    def delete_stream(self, stream_id):
+        """Delete a stream by ID"""
+        data = self.load_streams()
+        
+        # Find and remove the stream
+        stream_to_delete = None
+        for i, stream in enumerate(data["streams"]):
+            if stream["id"] == stream_id:
+                stream_to_delete = stream
+                # Remove from streams list
+                data["streams"].pop(i)
+                break
+        
+        if stream_to_delete:
+            # Remove from active streams if it's active
+            stream_key = stream_to_delete.get("stream_key")
+            if stream_key and stream_key in data["active_streams"]:
+                data["active_streams"].pop(stream_key, None)
+            
+            self.save_streams(data)
+            return True
+        
+        return False
 
 def main_streamlit_app():
     """Streamlit web interface"""
@@ -156,9 +180,31 @@ def main_streamlit_app():
                         rtmp_url = f"rtmp://{vps_ip}:1940/live/{stream['stream_key']}"
                         st.code(f"URL: {rtmp_url}", language="bash")
                     
-                    if st.button(f"Delete {stream['name']}", key=f"delete_{stream['id']}"):
-                        # Remove stream logic would go here
-                        st.warning("Delete functionality to be implemented")
+                    # Delete button with confirmation
+                    delete_key = f"delete_{stream['id']}"
+                    if delete_key not in st.session_state:
+                        st.session_state[delete_key] = False
+                    
+                    if st.session_state[delete_key]:
+                        # Show confirmation
+                        st.warning(f"⚠️ Are you sure you want to delete '{stream['name']}'?")
+                        col_confirm1, col_confirm2 = st.columns(2)
+                        with col_confirm1:
+                            if st.button("✅ Confirm Delete", key=f"confirm_{stream['id']}"):
+                                if manager.delete_stream(stream['id']):
+                                    st.success(f"✅ Stream '{stream['name']}' deleted successfully!")
+                                    st.session_state[delete_key] = False
+                                    st.rerun()
+                                else:
+                                    st.error("❌ Failed to delete stream")
+                        with col_confirm2:
+                            if st.button("❌ Cancel", key=f"cancel_{stream['id']}"):
+                                st.session_state[delete_key] = False
+                                st.rerun()
+                    else:
+                        if st.button(f"🗑️ Delete {stream['name']}", key=f"btn_{stream['id']}"):
+                            st.session_state[delete_key] = True
+                            st.rerun()
     
     # Active streams monitoring
     st.subheader("📈 Active Streams Monitor")
