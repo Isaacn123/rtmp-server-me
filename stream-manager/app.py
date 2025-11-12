@@ -127,7 +127,7 @@ def main_streamlit_app():
             
             with col2:
                 if vps_ip:
-                    rtmp_url = f"rtmp://{vps_ip}/live/{new_stream['stream_key']}"
+                    rtmp_url = f"rtmp://{vps_ip}:1936/live/{new_stream['stream_key']}"
                     st.write("**vMix Configuration:**")
                     st.code(f"URL: {rtmp_url}", language="bash")
                     
