@@ -10,6 +10,7 @@ from fastapi.responses import PlainTextResponse
 import uvicorn
 import threading
 import time
+import socket
 
 # Streamlit App
 class StreamKeyManager:
@@ -85,6 +86,9 @@ class StreamKeyManager:
 
 def main_streamlit_app():
     """Streamlit web interface"""
+    # Initialize FastAPI server if needed (only once)
+    start_fastapi_if_needed()
+    
     st.set_page_config(
         page_title="Self-Hosted RTMP Stream Manager",
         page_icon="🎥",
@@ -183,6 +187,19 @@ def main_streamlit_app():
 app = FastAPI()
 manager = StreamKeyManager()
 
+# Global flag to track if FastAPI server is running
+_fastapi_running = False
+_fastapi_lock = threading.Lock()
+
+def is_port_in_use(port):
+    """Check if a port is already in use"""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        try:
+            s.bind(('0.0.0.0', port))
+            return False
+        except OSError:
+            return True
+
 @app.post("/api/stream/start")
 async def stream_started(
     call: str = Form(None),
@@ -238,12 +255,38 @@ async def get_streams():
 
 def run_fastapi():
     """Run FastAPI server in background"""
-    uvicorn.run(app, host="0.0.0.0", port=8004, log_level="info")
+    global _fastapi_running
+    try:
+        uvicorn.run(app, host="0.0.0.0", port=8004, log_level="info")
+    except Exception as e:
+        print(f"FastAPI server error: {e}")
+    finally:
+        _fastapi_running = False
+
+def start_fastapi_if_needed():
+    """Start FastAPI server only if not already running"""
+    global _fastapi_running
+    
+    with _fastapi_lock:
+        # Check if port is already in use (by our own server)
+        if is_port_in_use(8004):
+            # Port is in use, assume server is already running
+            _fastapi_running = True
+            return
+        
+        if _fastapi_running:
+            return
+        
+        # Start the server
+        _fastapi_running = True
+        api_thread = threading.Thread(target=run_fastapi, daemon=True)
+        api_thread.start()
+        # Give it a moment to start
+        time.sleep(0.5)
 
 if __name__ == "__main__":
-    # Start FastAPI in background thread
-    api_thread = threading.Thread(target=run_fastapi, daemon=True)
-    api_thread.start()
+    # Start FastAPI in background thread (only if not already running)
+    start_fastapi_if_needed()
     
     # Run Streamlit app
     main_streamlit_app()
