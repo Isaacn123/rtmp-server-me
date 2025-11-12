@@ -207,7 +207,7 @@ async def get_streams():
 
 def run_fastapi():
     """Run FastAPI server in background"""
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=8004, log_level="info")
 
 if __name__ == "__main__":
     # Start FastAPI in background thread
