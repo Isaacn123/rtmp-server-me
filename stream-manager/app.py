@@ -157,11 +157,15 @@ def main_streamlit_app():
             with col2:
                 if vps_ip:
                     rtmp_url = f"rtmp://{vps_ip}:1940/live/{new_stream['stream_key']}"
+                    hls_url = f"http://{vps_ip}:8088/hls/{new_stream['stream_key']}.m3u8"
+                    
                     st.write("**vMix Configuration:**")
                     st.code(f"URL: {rtmp_url}", language="bash")
-                    
                     st.write("**In vMix:** Settings → Streaming → Add Destination → Custom")
-                    st.write(f"**URL:** `{rtmp_url}`")
+                    
+                    st.write("**📺 Watch Stream:**")
+                    st.code(f"HLS: {hls_url}", language="bash")
+                    st.write("**Copy HLS URL to:** VLC Media Player → Media → Open Network Stream")
     
     # Show existing streams
     st.subheader("📊 Existing Streams")
@@ -178,7 +182,18 @@ def main_streamlit_app():
                 with col2:
                     if vps_ip:
                         rtmp_url = f"rtmp://{vps_ip}:1940/live/{stream['stream_key']}"
-                        st.code(f"URL: {rtmp_url}", language="bash")
+                        hls_url = f"http://{vps_ip}:8088/hls/{stream['stream_key']}.m3u8"
+                        
+                        st.write("**RTMP URL (for streaming):**")
+                        st.code(f"{rtmp_url}", language="bash")
+                        
+                        if stream['is_active']:
+                            st.write("**📺 Watch Stream (HLS):**")
+                            st.code(f"{hls_url}", language="bash")
+                            st.info("💡 Copy this URL to VLC: Media → Open Network Stream")
+                        else:
+                            st.write("**📺 Watch URL (when live):**")
+                            st.code(f"HLS: {hls_url}", language="bash")
                     
                     # Delete button with confirmation
                     delete_key = f"delete_{stream['id']}"
